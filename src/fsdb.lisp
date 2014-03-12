@@ -56,7 +56,9 @@
 ;;; Implement the db protocol using the file system
 ;;;
 
-(defun make-fsdb (dir &key (external-format :default))
+(defparameter *default-external-format* :ISO-8859-1)
+
+(defun make-fsdb (dir &key (external-format *default-external-format*))
   "Create an fsdb isstance for the given file system directory."
   (make-instance 'fsdb :dir dir :external-format external-format))
 
@@ -65,7 +67,7 @@
         :accessor fsdb-dir)
    (external-format :initarg :external-format
                     :accessor fsdb-external-format
-                    :initform :default)))
+                    :initform *default-external-format*)))
 
 (defmethod print-object ((db fsdb) stream)
   (print-unreadable-object (db stream :type t)
