@@ -59,7 +59,7 @@
 (defparameter *default-external-format* :ISO-8859-1)
 
 (defun make-fsdb (dir &key (external-format *default-external-format*))
-  "Create an fsdb isstance for the given file system directory."
+  "Create an fsdb instance for the given file system directory."
   (make-instance 'fsdb :dir dir :external-format external-format))
 
 (defclass fsdb (db)
@@ -86,11 +86,28 @@
       (subseq key 1)
       key))
 
+(defun pathname-namestring (pathname)
+  (namestring (translate-logical-pathname pathname)))
+
+(defun append-paths (&rest paths)
+  (declare (dynamic-extent paths))
+  (with-output-to-string (s)
+    (loop for path in paths
+       for pathlen = (length path)
+       for last-char = #\/ then last-last-char
+       for last-last-char = (if (eql pathlen 0)
+                                #\/
+                                (elt path (1- pathlen)))
+       do
+         (unless (eql last-char #\/)
+           (write-char #\/ s))
+         (write-string path s))))
+
 (defmethod db-filename ((db fsdb) key)
   (if (blankp key)
       (values (fsdb-dir db) "")
       (let ((key (normalize-key key)))
-        (values (strcat (fsdb-dir db) "/" key)
+        (values (append-paths (pathname-namestring (fsdb-dir db)) key)
                 key))))
 
 (defmacro with-fsdb-filename ((db filename key) &body body)
@@ -184,7 +201,7 @@
     (sort (mapcar 'file-namestring-or-last-directory dir) #'string-lessp)))
 
 (defmethod db-subdir ((db fsdb) key)
-  (make-instance 'fsdb :dir (strcat (fsdb-dir db) "/" key)))
+  (make-instance 'fsdb :dir (append-paths (pathname-namestring (fsdb-dir db)) key)))
 
 (defmethod db-dir-p ((db fsdb) &rest keys)
   (declare (dynamic-extent keys))
